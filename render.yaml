@@ -1,0 +1,83 @@
+services:
+  - type: web
+    name: reachinbox-api
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run db:generate -w apps/backend && npm run build -w packages/shared && npm run build -w apps/backend
+    startCommand: npm run start -w apps/backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false
+      - key: SLACK_CLIENT_ID
+        sync: false
+      - key: SLACK_CLIENT_SECRET
+        sync: false
+      - key: SLACK_REDIRECT_URI
+        sync: false
+      - key: SLACK_NOTIFICATION_CHANNEL
+        sync: false
+      - key: ETHEREAL_HOST
+        value: smtp.ethereal.email
+      - key: ETHEREAL_PORT
+        value: "587"
+      - key: ETHEREAL_USER
+        sync: false
+      - key: ETHEREAL_PASSWORD
+        sync: false
+      - key: BULL_BOARD_USERNAME
+        sync: false
+      - key: BULL_BOARD_PASSWORD
+        sync: false
+      - key: ELASTICSEARCH_URL
+        sync: false
+      - key: ELASTICSEARCH_API_KEY
+        sync: false
+
+  - type: worker
+    name: reachinbox-worker
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run db:generate -w apps/backend && npm run build -w packages/shared && npm run build -w apps/backend
+    startCommand: npm run worker:start -w apps/backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: ETHEREAL_HOST
+        value: smtp.ethereal.email
+      - key: ETHEREAL_PORT
+        value: "587"
+      - key: ETHEREAL_USER
+        sync: false
+      - key: ETHEREAL_PASSWORD
+        sync: false
+      - key: WORKER_CONCURRENCY
+        value: "5"
+      - key: MIN_DELAY_BETWEEN_EMAILS_MS
+        value: "2000"
+      - key: MAX_EMAILS_PER_HOUR_PER_SENDER
+        value: "200"

@@ -1,0 +1,33 @@
+{
+  "name": "reachinbox",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev -w apps/backend",
+    "dev:frontend": "npm run dev -w apps/frontend",
+    "dev:worker": "npm run worker -w apps/backend",
+    "build": "npm run build -w packages/shared && npm run build -w apps/backend && npm run build -w apps/frontend",
+    "lint": "npm run lint -w apps/backend && npm run lint -w apps/frontend",
+    "test": "npm run test -w apps/backend",
+    "db:migrate": "npm run db:migrate -w apps/backend",
+    "db:migrate:deploy": "npm run db:migrate:deploy -w apps/backend",
+    "db:generate": "npm run db:generate -w apps/backend",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "worker:start": "npm run worker:start -w apps/backend"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "allowScripts": {
+    "@prisma/client@5.22.0": true,
+    "@prisma/engines@5.22.0": true,
+    "prisma@5.22.0": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.21.5": true,
+    "unrs-resolver@1.12.2": true
+  }
+}
