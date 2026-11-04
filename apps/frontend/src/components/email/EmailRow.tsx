@@ -13,6 +13,7 @@ interface EmailRowProps {
 
 export function EmailRow({ email }: EmailRowProps) {
   const router = useRouter();
+  const [isStarred, setIsStarred] = React.useState(false);
 
   const timeToDisplay = email.status === 'sent' && email.sentAt
     ? new Date(email.sentAt)
@@ -45,8 +46,15 @@ export function EmailRow({ email }: EmailRowProps) {
         </span>
       </div>
 
-      <div className="shrink-0 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity px-2">
-        <Star className="w-4 h-4 hover:text-yellow-400 cursor-pointer" />
+      <div
+        className={`shrink-0 px-2 transition-opacity ${isStarred ? 'opacity-100 text-yellow-400' : 'text-gray-300 opacity-0 group-hover:opacity-100'}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsStarred(!isStarred);
+        }}
+        title={isStarred ? 'Unstar' : 'Star'}
+      >
+        <Star className={`w-4 h-4 cursor-pointer ${isStarred ? 'fill-yellow-400' : 'hover:text-yellow-400'}`} />
       </div>
     </div>
   );

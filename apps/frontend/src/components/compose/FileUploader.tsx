@@ -6,9 +6,10 @@ import toast from 'react-hot-toast';
 
 interface FileUploaderProps {
   onEmailsExtracted: (emails: string[]) => void;
+  onFileProcessed?: (info: { fileName: string; count: number }) => void;
 }
 
-export function FileUploader({ onEmailsExtracted }: FileUploaderProps) {
+export function FileUploader({ onEmailsExtracted, onFileProcessed }: FileUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,7 +24,10 @@ export function FileUploader({ onEmailsExtracted }: FileUploaderProps) {
 
       if (uniqueEmails.length > 0) {
         onEmailsExtracted(uniqueEmails);
-        toast.success(`Found ${uniqueEmails.length} unique email addresses`);
+        if (onFileProcessed) {
+          onFileProcessed({ fileName: file.name, count: uniqueEmails.length });
+        }
+        toast.success(`Found ${uniqueEmails.length} unique email addresses in ${file.name}`);
       } else {
         toast.error('No valid email addresses found in file');
       }

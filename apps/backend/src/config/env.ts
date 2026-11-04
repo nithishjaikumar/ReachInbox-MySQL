@@ -26,6 +26,7 @@ const envSchema = z.object({
   ETHEREAL_PORT: z.coerce.number().int().positive().default(587),
   ETHEREAL_USER: z.string().optional(),
   ETHEREAL_PASSWORD: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
 
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
   ENCRYPTION_KEY: z.string().regex(/^[a-fA-F0-9]{64}$/, 'ENCRYPTION_KEY must be 64 hexadecimal characters (32 bytes)'),

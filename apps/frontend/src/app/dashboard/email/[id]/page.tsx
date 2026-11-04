@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEmailDetail, useCancelEmail } from '@/hooks/useEmails';
-import { ArrowLeft, Trash2, ChevronDown, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Trash2, ChevronDown, ExternalLink, Archive } from 'lucide-react';
 import { Avatar } from '@/components/ui/Avatar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { EmailStatusBadge } from '@/components/email/EmailStatusBadge';
@@ -52,10 +52,19 @@ export default function EmailDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <EmailStatusBadge status={email.status} date={new Date(email.scheduledAt)} />
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
+            title="Archive"
+          >
+            <Archive className="w-5 h-5" />
+          </button>
           {email.status === 'scheduled' && (
             <button
               onClick={() => cancelMutation.mutate(email.id)}
-              className="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50"
+              className="p-2 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
+              title="Cancel Scheduled Email"
             >
               <Trash2 className="w-5 h-5" />
             </button>

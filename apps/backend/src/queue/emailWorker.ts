@@ -12,6 +12,8 @@ import {
   sendEmail,
 } from '../integrations/email/ethereal';
 
+import { sendResendEmail } from '../integrations/email/resend';
+
 import logger from '../utils/logger';
 import { decrypt, isEncryptedPayload } from '../utils/encryption';
 import { shouldRetryJob } from './retryPolicy';
@@ -217,25 +219,38 @@ export const emailWorker = new Worker<EmailJobData>(
       };
     }
 
-    const transport =
-      createEtherealTransport(transportConfig);
-
-    /*
-     * ------------------------------------------------------------
-     * 7. Send actual email through Ethereal SMTP
-     * ------------------------------------------------------------
-     */
-
     try {
-      const result = await sendEmail(transport, {
-        from: `"${email.sender.name}" <${email.sender.email}>`,
-        to: email.recipientEmail,
-        subject: email.subject,
-        html: email.body,
-      });
+      const from = `"${email.sender.name}" <${email.sender.email}>`;
+
+      /*
+       * Delivery priority:
+       *  1. Sender-specific Ethereal SMTP credentials (best for safe demo/test delivery).
+       *  2. Resend API (fallback for production / senders without Ethereal creds).
+       *  3. Global Ethereal env fallback (legacy).
+       */
+      const result = transportConfig
+        ? await sendEmail(createEtherealTransport(transportConfig), {
+            from,
+            to: email.recipientEmail,
+            subject: email.subject,
+            html: email.body,
+          })
+        : env.RESEND_API_KEY
+        ? await sendResendEmail({
+            from,
+            to: email.recipientEmail,
+            subject: email.subject,
+            html: email.body,
+          })
+        : await sendEmail(createEtherealTransport(), {
+            from,
+            to: email.recipientEmail,
+            subject: email.subject,
+            html: email.body,
+          });
 
       logger.info(
-        `SMTP successfully accepted email ${emailId} for ${email.recipientEmail}`,
+        `Email provider accepted email ${emailId} for ${email.recipientEmail}`
       );
 
       /*

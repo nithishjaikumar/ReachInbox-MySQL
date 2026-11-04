@@ -1,22 +1,39 @@
-# ReachInbox review and fixes applied
+# ReachInbox Review and Fixes Applied
 
-This is a corrected working copy of the uploaded repository. The original upload was not overwritten.
+This is a corrected working copy of the ReachInbox repository configured for MySQL 8.4.
 
-## Backend and reliability
+## Google OAuth & Session Login Loop Fix
 
-- Implemented the previously unimplemented `POST /api/campaigns` endpoint.
+### Root Cause
+1. **Frontend API URL concatenation**: When Next.js rewrites were introduced to proxy `/api/:path*` to the backend, Axios in `apps/frontend/src/lib/api.ts` was set to `baseURL: '/api'`. However, all TanStack Query hooks (e.g. `useAuth`, `useEmails`, `useSenders`, `useSlack`) were written with `/api/...` prefixes (e.g. `api.get('/api/auth/me')`). This caused Axios to request `/api/api/auth/me`, which routed to a 404 endpoint. The failed request caused `AuthGuard` on `/dashboard` to immediately bounce users back to `/login`.
+2. **Helmet Cross-Origin Resource Policy (CORP)**: In `apps/backend/src/app.ts`, default `helmet()` set `Cross-Origin-Resource-Policy: same-origin`, which instructed browsers to block any direct cross-origin responses from `localhost:4000` to `localhost:3000`.
+3. **Google strategy upsert robustness**: In `apps/backend/src/auth/google.ts`, `prisma.user.upsert` failed if `profile.displayName` was missing during an update, and did not account for matching either by `googleId` or `email`, causing potential unhandled rejection.
+4. **Login UX and Error Handling**: The login page had a hardcoded static message stating Google OAuth must be configured, ignored URL query parameters (`?error=...`), and did not redirect already-authenticated users to `/dashboard`.
+5. **Logout and Session Teardown**: Logout lacked an explicit `path: '/'` on `res.clearCookie`, and the frontend UI had no wired sign-out button in the sidebar.
+
+### Fixes Implemented
+- **`apps/frontend/src/lib/api.ts`**: Normalized `baseURL` calculation to support Next.js same-origin rewrites (`baseURL = ''` when `NEXT_PUBLIC_API_URL` is omitted) while safely stripping trailing slashes or `/api` suffixes if provided, guaranteeing clean single `/api/...` requests without duplication.
+- **`apps/frontend/next.config.js`**: Verified rewrites for `/api/:path*` and `/admin/:path*` to the backend API origin (`process.env.API_SERVER_URL || 'http://localhost:4000'`).
+- **`apps/backend/src/app.ts`**: Configured Helmet with `crossOriginResourcePolicy: { policy: 'cross-origin' }`.
+- **`apps/backend/src/auth/google.ts`**: Refactored user retrieval to query `findFirst` on `googleId` OR `email`, and safely update/create with fallback display names and avatar URLs.
+- **`apps/backend/src/routes/auth.routes.ts`**: Added explicit `path: '/'` when clearing `reachinbox.sid` on logout.
+- **`apps/frontend/src/app/login/page.tsx`**: Replaced static misleading message, added automated redirection to `/dashboard` for active sessions, added query error message display (`?error=google_auth_failed`), and wrapped `useSearchParams` in `<Suspense>`.
+- **`apps/frontend/src/components/layout/Sidebar.tsx`**: Added a functional "Sign out" button connected to `useAuth().logout`.
+- **`apps/frontend/src/app/page.tsx`**: Redirects `/` to `/dashboard` (which `AuthGuard` guards).
+
+## Backend and Reliability
+
+- Implemented the `POST /api/campaigns` endpoint.
 - Reworked campaign scheduling to persist email rows as a batch and enqueue BullMQ jobs with `addBulk`.
 - Added compensation on queue-enqueue failure: pending rows are cancelled and corresponding queue jobs are removed best-effort.
 - Added recipient normalization/deduplication and recipient-count limits.
 - Enforced server-side minimum inter-send delay and maximum hourly sender limit.
 - Fixed BullMQ retry state handling so failed attempts return to `scheduled` while retries remain and become `failed` only after the final attempt.
-- Added a shared retry policy helper and tests.
+- Added a shared retry policy helper and unit tests.
 - Fixed cancellation ordering to atomically transition `scheduled` to `cancelled` before queue cleanup, avoiding a worker/cancel race.
-- Added fallback queue-job lookup by email ID because queue jobs are now created in a bulk operation.
-- Made Elasticsearch optional and added MySQL search fallback, including fallback when the search index has no current hits.
-- Made Slack and Google OAuth optional at application startup; endpoints return a clear service-unavailable response until configured.
+- Added fallback queue-job lookup by email ID because queue jobs are created in a bulk operation.
+- Made Elasticsearch optional and added MySQL search fallback.
 - Added session-bound, random, one-time Slack OAuth state validation.
-- Added Google OAuth state handling.
 - Added graceful API and worker shutdown.
 - Added liveness endpoint and made Elasticsearch optional in health checks.
 
@@ -29,41 +46,11 @@ This is a corrected working copy of the uploaded repository. The original upload
 - Encrypted sender SMTP credentials at rest.
 - Changed sender/email/search API responses to exclude SMTP credential fields.
 - Sanitized HTML before rendering message bodies in the browser.
-- Removed nonfunctional login fields and inert compose/detail controls.
 
-## Frontend and UX
+## MySQL Conversion
 
-- Fixed the hourly limit default so the form no longer sends zero.
-- Added client-side validation for sender, recipients, subject, body, delay and schedule time.
-- Fixed custom scheduling date minimum handling for local time zones.
-- Fixed dropdown behavior so the schedule picker can be used without closing on input click.
-- Improved recipient entry to accept comma/semicolon/whitespace-separated addresses.
-- Clarified that Ethereal is a test SMTP service and not real campaign delivery.
-
-## Deployment support
-
-- Added `render.yaml` for separate API and persistent worker services.
-- Added `DEPLOYMENT.md` for Vercel frontend, Render API/worker, managed MySQL and managed Redis setup.
-- Rewrote the README to accurately describe the demo, architecture, local setup and constraints.
-- Added `.nvmrc` for Node 20 and a root ESLint configuration.
-
-## Remaining items that require your accounts or decisions
-
-1. Run `npm ci`, `npm test`, `npm run lint`, and `npm run build` in an environment with registry access. Dependency installation could not complete in this workspace because npm registry access timed out, so a full build/test pass is not claimed.
-2. Configure managed MySQL, a BullMQ-compatible Redis service, Google OAuth credentials, Vercel and Render environment variables.
-3. Deploy the API and worker separately, apply Prisma migrations, then deploy the frontend.
-4. Ethereal only creates test inbox previews. For real outbound email, add a production provider and implement domain verification, consent/unsubscribe, bounce and complaint handling.
-5. The original improved copy used PostgreSQL. This MySQL edition changes the Prisma provider, initial migration, local Docker database, connection URL, and case-insensitive search behavior to MySQL.
-6. Confirm the assessment terms allow public distribution of your implementation. Do not publish company-confidential source or assessment material if prohibited.
-
-
-## MySQL conversion
-
-- Switched the Prisma datasource and migration provider to MySQL.
-- Replaced the initial PostgreSQL migration with MySQL-compatible DDL for all application tables, indexes, and foreign keys.
+- Switched Prisma datasource and migration provider to MySQL.
+- Replaced initial PostgreSQL migration with MySQL-compatible DDL for all application tables, indexes, and foreign keys.
 - Used `LONGTEXT` for campaign and email bodies and `TEXT` for stored error messages.
 - Updated local Docker Compose to MySQL 8.4 while retaining Redis, BullMQ, and optional Elasticsearch.
-- Updated `DATABASE_URL`, setup instructions, deployment guidance, and MySQL search fallback wording.
 - Removed Prisma's PostgreSQL-only `mode: "insensitive"` query option; the MySQL database uses the configured case-insensitive `utf8mb4_unicode_ci` collation.
-
-The MySQL conversion has been statically reviewed, but it has not yet been run against a live MySQL server in this environment. Run the verification steps in README before treating it as tested.

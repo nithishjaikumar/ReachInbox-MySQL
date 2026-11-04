@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useScheduledEmails, useSentEmails } from '@/hooks/useEmails';
-import { Clock, Send, Settings, ChevronDown, PenSquare } from 'lucide-react';
+import { Clock, Send, Settings, ChevronDown, PenSquare, LogOut, Activity } from 'lucide-react';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
 
   const { data: scheduled } = useScheduledEmails(1, 1);
   const { data: sent } = useSentEmails(1, 1);
@@ -71,7 +71,16 @@ export function Sidebar() {
         </nav>
       </div>
 
-      <div className="mt-auto p-3">
+      <div className="mt-auto p-3 space-y-1">
+        <a
+          href="/admin/queues"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+          title="Open BullMQ Live Dashboard (User: admin / Pass: reachinbox_admin)"
+        >
+          <Activity className="w-4 h-4 text-emerald-600" /> Queue Monitor
+        </a>
         <Link
           href="/dashboard/settings"
           className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -80,6 +89,15 @@ export function Sidebar() {
         >
           <Settings className="w-4 h-4" /> Settings
         </Link>
+        <button
+          type="button"
+          onClick={() => logout()}
+          disabled={isLoggingOut}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
+        >
+          <LogOut className="w-4 h-4" />
+          {isLoggingOut ? 'Signing out...' : 'Sign out'}
+        </button>
       </div>
     </aside>
   );

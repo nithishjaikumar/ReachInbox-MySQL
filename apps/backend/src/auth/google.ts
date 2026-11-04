@@ -13,11 +13,28 @@ if (isGoogleOAuthConfigured) {
       const email = profile.emails?.[0]?.value?.toLowerCase();
       if (!email) return done(new Error('Google account did not provide an email address'));
 
-      const user = await prisma.user.upsert({
-        where: { email },
-        update: { name: profile.displayName, avatarUrl: profile.photos?.[0]?.value, googleId: profile.id },
-        create: { email, name: profile.displayName || email, avatarUrl: profile.photos?.[0]?.value, googleId: profile.id },
+      const name = profile.displayName || email;
+      const avatarUrl = profile.photos?.[0]?.value || null;
+
+      let user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { googleId: profile.id },
+            { email },
+          ],
+        },
       });
+
+      if (user) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { name, avatarUrl, googleId: profile.id, email },
+        });
+      } else {
+        user = await prisma.user.create({
+          data: { email, name, avatarUrl, googleId: profile.id },
+        });
+      }
       return done(null, user);
     } catch (error) {
       return done(error as Error);

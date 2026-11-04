@@ -39,6 +39,7 @@ authRouter.post('/logout', requireAuth, (req, res, next) => {
       if (sessionError) return next(sessionError);
 
       res.clearCookie('reachinbox.sid', {
+        path: '/',
         httpOnly: true,
         sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: env.NODE_ENV === 'production',

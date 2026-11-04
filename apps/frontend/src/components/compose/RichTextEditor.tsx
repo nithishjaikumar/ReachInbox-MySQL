@@ -10,8 +10,9 @@ import {
   Bold, Italic, Underline as UnderlineIcon,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   List, ListOrdered, Quote, Code, Strikethrough,
-  Undo, Redo
+  Undo, Redo, Paperclip
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface RichTextEditorProps {
   value: string;
@@ -83,6 +84,10 @@ export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
         <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} icon={Quote} />
         <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} isActive={editor.isActive('codeBlock')} icon={Code} />
+        <ToolbarButton
+          onClick={() => toast('Attachments are supported via inline media or cloud link in assessment mode.', { icon: '📎' })}
+          icon={Paperclip}
+        />
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ export function ComposeForm() {
   const [delayBetweenEmails, setDelayBetweenEmails] = useState(2000);
   const [hourlyLimit, setHourlyLimit] = useState(200);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [lastUploadedFile, setLastUploadedFile] = useState<{ fileName: string; count: number } | null>(null);
 
 
   const handleSend = (scheduledAt?: Date) => {
@@ -108,14 +109,32 @@ export function ComposeForm() {
         </div>
 
         <div className="flex items-start gap-4">
-          <label className="w-[100px] text-right text-sm font-medium text-gray-600 mt-2">To:</label>
-          <div className="flex-1 flex gap-2">
-            <div className="flex-1">
-              <RecipientInput emails={recipients} onChange={setRecipients} />
+          <div className="w-[100px] text-right mt-2">
+            <label className="text-sm font-medium text-gray-600">To:</label>
+            {recipients.length > 0 && (
+              <div className="text-xs text-emerald-600 font-semibold mt-1">
+                {recipients.length} total
+              </div>
+            )}
+          </div>
+          <div className="flex-1 flex flex-col gap-1.5">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <RecipientInput emails={recipients} onChange={setRecipients} />
+              </div>
+              <div className="shrink-0 pt-2">
+                <FileUploader
+                  onEmailsExtracted={(emails) => setRecipients((prev) => Array.from(new Set([...prev, ...emails])))}
+                  onFileProcessed={setLastUploadedFile}
+                />
+              </div>
             </div>
-            <div className="shrink-0 pt-2">
-              <FileUploader onEmailsExtracted={(emails) => setRecipients(prev => Array.from(new Set([...prev, ...emails])))} />
-            </div>
+            {lastUploadedFile && (
+              <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Parsed <span className="font-medium text-gray-700">{lastUploadedFile.fileName}</span>: {lastUploadedFile.count} email addresses detected
+              </div>
+            )}
           </div>
         </div>
 

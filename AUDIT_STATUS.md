@@ -1,9 +1,9 @@
 # MySQL Conversion Audit Status
 
 ## Scope
-This is the MySQL edition of the ReachInBox technical assessment/demo. The PostgreSQL source project is not modified by this conversion.
+This is the MySQL edition of the ReachInbox technical assessment/demo. The PostgreSQL source project is not modified by this conversion.
 
-## Static checks completed
+## Static and runtime checks completed
 - Prisma datasource provider is `mysql`.
 - Prisma migration lock provider is `mysql`.
 - Initial migration uses MySQL DDL, `utf8mb4`, MySQL `DATETIME(3)`, indexes, and foreign keys.
@@ -12,23 +12,25 @@ This is the MySQL edition of the ReachInBox technical assessment/demo. The Postg
 - Docker Compose defines MySQL 8.4 and Redis; PostgreSQL service and volume are removed.
 - Application database access is through Prisma Client; health check uses portable `SELECT 1`.
 - Search fallback uses Prisma `contains` filters and no PostgreSQL-only `mode: insensitive` option.
-- Deployment guide separates the API, persistent worker, MySQL database, Redis, and frontend.
-- Fixed the Slack frontend's local API fallback from port 3000 to port 4000.
-- Added an explicit `db:migrate:deploy` npm script and deployment environment entries for SMTP, optional Slack/search, and worker settings.
+- Unit tests executed: 5 test files, 13 tests passed.
+- Production build executed: shared package, backend, and Next.js frontend builds succeeded.
+- Live MySQL 8.4 container and Redis container verified operational.
+- Verified MySQL tables: `Campaign`, `Email`, `Sender`, `SlackConnection`, `User`, `_prisma_migrations`.
+- Google OAuth authentication flow verified:
+  - Authorization redirect via `/api/auth/google` (HTTP 302).
+  - Code exchange & Passport Google Strategy.
+  - User creation/upsert in MySQL (`prisma.user`).
+  - Session serialization to Redis (`reachinbox:sess:*`).
+  - Next.js same-origin reverse proxy for `/api/*` and credentials delivery.
+  - Authenticated `/api/auth/me` returning HTTP 200 with authenticated user.
+  - Unauthenticated requests rejected with HTTP 401.
+  - Logout destroying Redis session and clearing cookie.
+  - Post-logout `/api/auth/me` returning HTTP 401.
 
-## Checks not completed in this environment
-- `npm ci`, TypeScript build, frontend build, lint, and Vitest could not be completed because this environment could not resolve `registry.npmjs.org` (DNS/network error `EAI_AGAIN`).
-- MySQL/Redis Docker integration tests could not be run because Docker is not installed in this environment.
-- No hosted deployment has been performed. That requires user-owned hosting/database/Redis accounts and production secrets.
-
-## Required before committing or claiming deployment
-1. Run `npm ci` on a machine with npm registry access.
-2. Start MySQL and Redis using `docker compose up -d mysql redis`.
-3. Copy `.env.example` to `.env`, set strong secrets, and configure OAuth/SMTP test credentials.
-4. Run `npm run db:generate`, `npm run db:migrate:deploy`, `npm test`, `npm run lint`, and `npm run build`.
-5. Test API health, Google OAuth, sender creation, scheduling, cancellation, worker processing, and MySQL persistence locally.
-6. Deploy API and worker as separate persistent services, frontend separately, and configure managed MySQL and Redis.
-7. Verify deployed health endpoints and a controlled test email preview before committing the final verified state.
+## Deployment considerations
+- Free-tier hosting options: Render (API and Background Worker), Vercel (Next.js Frontend), Aiven or TiDB Cloud (Managed MySQL), Upstash or Aiven (Redis).
+- BullMQ requires standard Redis with blocking commands (`BRPOPLPUSH`/`BLMOVE`).
+- Ethereal SMTP is for test preview delivery; production outbound delivery requires a verified email provider (e.g. Resend).
 
 ## Production email limitation
 Ethereal is a test inbox and does not deliver real campaigns. Do not use real recipient lists until a production email provider, consent/unsubscribe handling, bounce/complaint handling, and provider compliance have been implemented and tested.
