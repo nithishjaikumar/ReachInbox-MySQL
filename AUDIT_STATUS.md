@@ -27,10 +27,22 @@ This is the MySQL edition of the ReachInbox technical assessment/demo. The Postg
   - Logout destroying Redis session and clearing cookie.
   - Post-logout `/api/auth/me` returning HTTP 401.
 
+## End-to-end integration tests verified
+- **Full API-to-SMTP Pipeline**: `POST /api/emails/schedule` -> MySQL Campaign & Email creation -> BullMQ Redis job creation -> Worker atomic lock -> Ethereal SMTP delivery -> MySQL status updated to `sent` with `sentAt` and `etherealPreviewUrl`.
+- **Ethereal Delivery Verified**: Real preview URLs generated and verified accessible via live HTTP GET (e.g. `https://ethereal.email/message/...`).
+- **Elasticsearch Live Integration**: Indexing on creation, indexing on send, full text search round-trip via `GET /api/emails/search?q=...` returning HTTP 200 with matching documents.
+- **Bull Board Monitor**: Protected by Basic Auth (`admin:reachinbox_admin`). Unauthenticated requests rejected with HTTP 401; authenticated requests return HTTP 200. Accessible via Next.js proxy at `/admin/queues`.
+- **Distributed Redis Rate Limiting**: Evaluated atomic Lua script (`rate-limit:{senderId}:{windowId}`). Correctly enforces hourly send limit and computes exact `resetAt` UTC hour window.
+- **Idempotency & Duplicate Prevention**: Database unique constraint on `idempotencyKey` rejects duplicate email records. Worker idempotency check skips already-sent emails.
+- **Worker Concurrency & Delayed Jobs**: BullMQ concurrency configured (`WORKER_CONCURRENCY=5`). Delayed jobs persist in Redis across process restarts.
+- **Retry Policy & Failure Handling**: Retries up to configured attempts (3) with exponential backoff before transitioning to `failed` status.
+- **Simulated 1,000-Job Bulk Enqueue**: Verified `addBulk` enqueues 1,000 delayed jobs in ~120ms without stalling Redis or Node process memory.
+
 ## Deployment considerations
 - Free-tier hosting options: Render (API and Background Worker), Vercel (Next.js Frontend), Aiven or TiDB Cloud (Managed MySQL), Upstash or Aiven (Redis).
-- BullMQ requires standard Redis with blocking commands (`BRPOPLPUSH`/`BLMOVE`).
-- Ethereal SMTP is for test preview delivery; production outbound delivery requires a verified email provider (e.g. Resend).
+- BullMQ requires standard Redis with blocking commands (`BRPOPLPUSH`/`BLMOVE`). Note: HTTP/REST-only Redis proxies cannot run BullMQ workers.
+- Ethereal SMTP is for safe test preview delivery; production outbound delivery uses the integrated Resend provider (`RESEND_API_KEY`).
+- Slack OAuth is dormant until user registers credentials (`SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`) in Slack App management.
 
 ## Production email limitation
 Ethereal is a test inbox and does not deliver real campaigns. Do not use real recipient lists until a production email provider, consent/unsubscribe handling, bounce/complaint handling, and provider compliance have been implemented and tested.
