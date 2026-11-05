@@ -101,16 +101,29 @@ createBullBoard({
 });
 
 if (env.BULL_BOARD_USERNAME && env.BULL_BOARD_PASSWORD) {
-  app.use('/admin/queues', (req, res, next) => {
-    const header = req.headers.authorization;
-    if (!header?.startsWith('Basic ')) {
-      res.setHeader('WWW-Authenticate', 'Basic realm=\"ReachInbox Queue Dashboard\"');
-      return res.status(401).send('Authentication required');
-    }
-    const [username, password] = Buffer.from(header.slice(6), 'base64').toString('utf8').split(':');
-    if (username !== env.BULL_BOARD_USERNAME || password !== env.BULL_BOARD_PASSWORD) return res.status(401).send('Invalid credentials');
-    next();
-  }, serverAdapter.getRouter());
+  app.use(
+    '/admin/queues',
+    (req, res, next) => {
+      const header = req.headers.authorization;
+      if (!header?.startsWith('Basic ')) {
+        res.setHeader('WWW-Authenticate', 'Basic realm="ReachInbox Queue Dashboard"');
+        return res.status(401).send('Authentication required');
+      }
+      const [username, password] = Buffer.from(header.slice(6), 'base64').toString('utf8').split(':');
+      if (username !== env.BULL_BOARD_USERNAME || password !== env.BULL_BOARD_PASSWORD) {
+        return res.status(401).send('Invalid credentials');
+      }
+      next();
+    },
+    serverAdapter.getRouter()
+  );
+} else {
+  app.use('/admin/queues', (_req, res) => {
+    res.status(403).json({
+      success: false,
+      error: 'Queue administration dashboard is disabled until BULL_BOARD_USERNAME and BULL_BOARD_PASSWORD credentials are configured.',
+    });
+  });
 }
 
 
