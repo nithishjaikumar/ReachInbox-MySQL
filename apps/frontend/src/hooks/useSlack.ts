@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 interface SlackStatus {
   connected: boolean;
   teamName?: string | null;
+  configured?: boolean;
 }
 
 export function useSlack() {
@@ -18,9 +19,9 @@ export function useSlack() {
   });
 
   const connect = () => {
-    window.location.href = `${
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-    }/api/slack/connect`;
+    const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
+    const prefix = raw ? raw.replace(/\/+$/, '').replace(/\/api$/, '') : '';
+    window.location.href = `${prefix}/api/slack/connect`;
   };
 
   const disconnect = useMutation({

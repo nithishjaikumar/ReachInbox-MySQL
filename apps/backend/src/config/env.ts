@@ -47,5 +47,22 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 export const isGoogleOAuthConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_CALLBACK_URL);
+
+export const getIsSlackOAuthConfigured = () => {
+  const clientId = process.env.SLACK_CLIENT_ID || env.SLACK_CLIENT_ID;
+  const clientSecret = process.env.SLACK_CLIENT_SECRET || env.SLACK_CLIENT_SECRET;
+  const redirectUri = process.env.SLACK_REDIRECT_URI || env.SLACK_REDIRECT_URI;
+  return Boolean(clientId && clientSecret && redirectUri);
+};
+
+export const getSlackCredentials = () => {
+  return {
+    clientId: process.env.SLACK_CLIENT_ID || env.SLACK_CLIENT_ID,
+    clientSecret: process.env.SLACK_CLIENT_SECRET || env.SLACK_CLIENT_SECRET,
+    redirectUri: process.env.SLACK_REDIRECT_URI || env.SLACK_REDIRECT_URI,
+    channel: process.env.SLACK_NOTIFICATION_CHANNEL || env.SLACK_NOTIFICATION_CHANNEL,
+  };
+};
+
 export const isSlackOAuthConfigured = Boolean(env.SLACK_CLIENT_ID && env.SLACK_CLIENT_SECRET && env.SLACK_REDIRECT_URI);
 export const isElasticsearchConfigured = Boolean(env.ELASTICSEARCH_URL);

@@ -1,11 +1,36 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { useSlack } from '@/hooks/useSlack';
 import { useCreateSender, useSenders } from '@/hooks/useSenders';
 import { Button } from '@/components/ui/Button';
 import { Mail, Plus, Trash2 } from 'lucide-react';
+
+function SlackAlerts() {
+  const searchParams = useSearchParams();
+  const slackParam = searchParams.get('slack');
+  const errorParam = searchParams.get('error');
+
+  if (slackParam === 'connected') {
+    return (
+      <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-sm flex items-center justify-between">
+        <span>✅ Slack workspace connected successfully! Hourly rate limit alerts will be delivered to your workspace.</span>
+      </div>
+    );
+  }
+
+  if (errorParam) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm flex items-center justify-between">
+        <span>❌ Slack connection failed: {decodeURIComponent(errorParam)}. Please check your credentials and retry.</span>
+      </div>
+    );
+  }
+
+  return null;
+}
 
 export default function SettingsPage() {
   const {
@@ -55,6 +80,9 @@ export default function SettingsPage() {
       <Header title="Settings" />
 
       <div className="p-8 max-w-4xl space-y-6">
+        <Suspense fallback={null}>
+          <SlackAlerts />
+        </Suspense>
 
         {/* Integrations */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -79,13 +107,27 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <h3 className="font-medium text-gray-900">
-                  Slack
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium text-gray-900">
+                    Slack
+                  </h3>
+                  {slack?.connected && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800">
+                      Connected
+                    </span>
+                  )}
+                  {!slack?.connected && slack?.configured === false && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                      Setup required
+                    </span>
+                  )}
+                </div>
 
                 <p className="text-sm text-gray-500">
                   {slack?.connected
-                    ? `Connected to ${slack.teamName}`
+                    ? `Connected to ${slack.teamName || 'workspace'}`
+                    : slack?.configured === false
+                    ? 'SLACK_CLIENT_ID and SLACK_CLIENT_SECRET required in .env'
                     : 'Receive notifications in your workspace'}
                 </p>
               </div>
