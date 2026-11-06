@@ -3,7 +3,7 @@ services:
     name: reachinbox-api
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run db:generate -w apps/backend && npm run build -w packages/shared && npm run build -w apps/backend && npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
+    buildCommand: npm ci --include=dev && npm run db:generate -w apps/backend && npm run build -w packages/shared && npm run build -w apps/backend && npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
     startCommand: npm run start -w apps/backend
     healthCheckPath: /api/health
     envVars:
