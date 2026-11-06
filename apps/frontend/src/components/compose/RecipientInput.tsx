@@ -81,9 +81,14 @@ export function RecipientInput({
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
+        onBlur={() => {
+          if (inputValue.trim()) {
+            addEmail(inputValue);
+          }
+        }}
         placeholder={
           emails.length === 0
-            ? 'Add recipients...'
+            ? 'Add recipients (press Enter or comma)...'
             : ''
         }
         className="flex-1 min-w-[150px] bg-transparent outline-none text-sm px-2 py-1"
