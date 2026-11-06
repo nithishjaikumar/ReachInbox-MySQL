@@ -6,7 +6,7 @@ import prisma from './config/database';
 import redis from './config/redis';
 import { emailQueue } from './queue/emailQueue';
 
-const server = app.listen(env.PORT, () => logger.info(`ReachInbox API listening on port ${env.PORT}`));
+const server = app.listen(env.PORT, '0.0.0.0', () => logger.info(`ReachInbox API listening on port ${env.PORT}`));
 
 // Elasticsearch is optional; its service degrades to MySQL search.
 void elasticsearchService.ensureIndex();
