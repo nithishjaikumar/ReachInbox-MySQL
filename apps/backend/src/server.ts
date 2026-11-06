@@ -11,10 +11,21 @@ const server = app.listen(env.PORT, () => logger.info(`ReachInbox API listening 
 // Elasticsearch is optional; its service degrades to MySQL search.
 void elasticsearchService.ensureIndex();
 
+let workerInstance: { close: () => Promise<void> } | null = null;
+if (env.NODE_ENV === 'production') {
+  // Start the BullMQ worker in the same process on free-tier single-instance web services
+  const { emailWorker } = require('./queue/emailWorker');
+  workerInstance = emailWorker;
+  logger.info(`Started co-located BullMQ worker (concurrency: ${env.WORKER_CONCURRENCY})`);
+}
+
 const shutdown = async (signal: string) => {
   logger.info(`Received ${signal}; shutting down API...`);
   server.close(async () => {
     try {
+      if (workerInstance) {
+        await workerInstance.close();
+      }
       await emailQueue.close();
       await prisma.$disconnect();
       await redis.quit();

@@ -33,7 +33,7 @@ export class ElasticsearchService {
       if (!exists) {
         await elasticClient.indices.create({
           index: this.index,
-          mappings: { properties },
+          mappings: { properties: properties as any },
         });
         logger.info(`Elasticsearch index "${this.index}" created`);
       } else {
@@ -42,7 +42,7 @@ export class ElasticsearchService {
           properties: {
             errorMessage: { type: 'text' },
             attempts: { type: 'integer' },
-          },
+          } as any,
         });
       }
     } catch (error) {

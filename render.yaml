@@ -2,8 +2,8 @@ services:
   - type: web
     name: reachinbox-api
     runtime: node
-    plan: starter
-    buildCommand: npm ci && npm run db:generate -w apps/backend && npm run build -w packages/shared && npm run build -w apps/backend
+    plan: free
+    buildCommand: npm ci && npm run db:generate -w apps/backend && npm run build -w packages/shared && npm run build -w apps/backend && npx prisma migrate deploy --schema=apps/backend/prisma/schema.prisma
     startCommand: npm run start -w apps/backend
     healthCheckPath: /api/health
     envVars:
@@ -48,32 +48,6 @@ services:
       - key: ELASTICSEARCH_URL
         sync: false
       - key: ELASTICSEARCH_API_KEY
-        sync: false
-
-  - type: worker
-    name: reachinbox-worker
-    runtime: node
-    plan: starter
-    buildCommand: npm ci && npm run db:generate -w apps/backend && npm run build -w packages/shared && npm run build -w apps/backend
-    startCommand: npm run worker:start -w apps/backend
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
-        sync: false
-      - key: SESSION_SECRET
-        sync: false
-      - key: ENCRYPTION_KEY
-        sync: false
-      - key: ETHEREAL_HOST
-        value: smtp.ethereal.email
-      - key: ETHEREAL_PORT
-        value: "587"
-      - key: ETHEREAL_USER
-        sync: false
-      - key: ETHEREAL_PASSWORD
         sync: false
       - key: WORKER_CONCURRENCY
         value: "5"
